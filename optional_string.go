@@ -65,8 +65,7 @@ func EnumerateOptionalString(optionalString string) (enumerated []string, err er
 	root := optStrContext{
 		node: &treeNode{},
 	}
-	ctx := root
-	recursiveDecode(node, &ctx)
+	recursiveDecode(node, &root)
 
 	return root.Trunc(), nil
 }
