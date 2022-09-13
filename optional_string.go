@@ -3,6 +3,7 @@ package flextime
 import (
 	"fmt"
 
+	"github.com/ngicks/type-param-common/slice"
 	"github.com/pkg/errors"
 	parsec "github.com/prataprc/goparsec"
 )
@@ -14,12 +15,14 @@ const (
 	NORMALCHARS = "NORMALCHARS"
 )
 
-func MakeOptionalStringParser(ast *parsec.AST) parsec.Parser {
-	opensqr := parsec.Atom(`[`, OPENSQR)
-	closesqr := parsec.Atom(`]`, CLOSESQR)
-	escapedchar := parsec.Token(`\\.`, ESCAPEDCHAR)
-	normalchars := parsec.Token(`[^\[\]\\]+`, NORMALCHARS)
+var (
+	opensqr     parsec.Parser = parsec.Atom(`[`, OPENSQR)
+	closesqr                  = parsec.Atom(`]`, CLOSESQR)
+	escapedchar               = parsec.Token(`\\.`, ESCAPEDCHAR)
+	normalchars               = parsec.Token(`[^\[\]\\]+`, NORMALCHARS)
+)
 
+func MakeOptionalStringParser(ast *parsec.AST) parsec.Parser {
 	char := ast.OrdChoice("char", nil, escapedchar, normalchars)
 	chars := ast.Many("chars", nil, char)
 
@@ -132,10 +135,10 @@ func (ctx *optStrContext) trunc() []string {
 
 	if ctx.node.next != nil {
 		nextStr := ctx.StepNext().trunc()
-		if len(nextStr) > 0 {
+		_, hasNonEmpty := slice.Find(nextStr, func(v string) bool { return v != "" })
+		if hasNonEmpty {
 			org := make([]string, len(ret))
 			copy(org, ret)
-			// org := ret
 			ret = ret[:0]
 			for _, nn := range nextStr {
 				for _, oo := range org {

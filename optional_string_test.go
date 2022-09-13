@@ -80,6 +80,7 @@ func TestOptionalNonClosing(t *testing.T) {
 		`foobarbaz]qux[]`,
 		`foobarbaz\]qux[\]`,
 		`foobarbaz\]qux\[]`,
+		`foobar[ba[zq]ux`,
 	}
 
 	for _, input := range cases {
