@@ -59,6 +59,13 @@ func TestMakeVariantsOptinalString(t *testing.T) {
 				`YYYY-MM-DDa`,
 			},
 		},
+		{
+			input: `[YYYY'[-M]'M]-DDTHH:mm:ss.SSSZ`,
+			output: []string{
+				`YYYY'[-M]'M-DDTHH:mm:ss.SSSZ`,
+				`-DDTHH:mm:ss.SSSZ`,
+			},
+		},
 	}
 
 	for _, testCase := range cases {
