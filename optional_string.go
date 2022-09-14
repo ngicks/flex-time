@@ -11,6 +11,7 @@ import (
 const (
 	OPENSQR     = "OPENSQR"
 	CLOSESQR    = "CLOSESQR"
+	SQUOTE      = "SQUOTE"
 	ESCAPEDCHAR = "ESCAPEDCHAR"
 	NORMALCHARS = "NORMALCHARS"
 )
@@ -18,6 +19,7 @@ const (
 var (
 	opensqr     parsec.Parser = parsec.Atom(`[`, OPENSQR)
 	closesqr                  = parsec.Atom(`]`, CLOSESQR)
+	squote                    = parsec.Atom(`'`, SQUOTE)
 	escapedchar               = parsec.Token(`\\.`, ESCAPEDCHAR)
 	normalchars               = parsec.Token(`[^\[\]\\]+`, NORMALCHARS)
 )
@@ -25,9 +27,12 @@ var (
 func MakeOptionalStringParser(ast *parsec.AST) parsec.Parser {
 	char := ast.OrdChoice("char", nil, escapedchar, normalchars)
 	chars := ast.Many("chars", nil, char)
+	charWithinEscape := ast.OrdChoice("charWithinEscape", nil, escapedchar, normalchars, opensqr, closesqr)
+	charsWithinEscape := ast.Many("charsWithinEscape", nil, charWithinEscape)
 
 	var optional parsec.Parser
-	item := ast.OrdChoice("item", nil, chars, &optional)
+	escaped := ast.And("escaped", nil, squote, charsWithinEscape, squote)
+	item := ast.OrdChoice("item", nil, chars, escaped, &optional)
 	items := ast.Kleene("items", nil, item)
 	optional = ast.And("optional", nil, opensqr, items, closesqr)
 	return ast.Kleene("optionalString", nil, ast.OrdChoice("items", nil, optional, chars))
