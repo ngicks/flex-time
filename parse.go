@@ -317,6 +317,9 @@ var goTimeFmtTokens = [...]goTimeFmtToken{
 	"-07:00:00",
 }
 
+// func IsGoTimeLayoutToken(str string) bool {
+// }
+
 func (tt timeFormatToken) toGoFmt() string {
 	switch tt {
 	case "MMMM":
