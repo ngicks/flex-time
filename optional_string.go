@@ -60,7 +60,7 @@ func (e SyntaxError) Error() string {
 	)
 }
 
-func EnumerateOptionalString(optionalString string) (enumerated []string, err error) {
+func EnumerateOptionalStringRaw(optionalString string) (enumerated []rawString, err error) {
 	var node parsec.Queryable
 	func() {
 		defer func() {
@@ -80,7 +80,7 @@ func EnumerateOptionalString(optionalString string) (enumerated []string, err er
 	}
 
 	if parsedAs := node.GetValue(); len(parsedAs) != len(optionalString) {
-		return []string{}, &SyntaxError{
+		return []rawString{}, &SyntaxError{
 			org:      optionalString,
 			parsedAs: parsedAs,
 		}
@@ -88,12 +88,20 @@ func EnumerateOptionalString(optionalString string) (enumerated []string, err er
 
 	root := decode(node)
 
-	f := root.Flatten()
-	out := make([]string, len(f))
-	for idx, v := range f {
-		out[idx] = v.String()
+	return root.Flatten(), nil
+
+}
+
+func EnumerateOptionalString(optionalString string) (enumerated []string, err error) {
+	raw, err := EnumerateOptionalStringRaw(optionalString)
+	if err != nil {
+		return []string{}, err
 	}
 
+	out := make([]string, len(raw))
+	for idx, v := range raw {
+		out[idx] = v.String()
+	}
 	return out, nil
 }
 

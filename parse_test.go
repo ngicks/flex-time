@@ -53,6 +53,10 @@ func TestReplaceTimeToken(t *testing.T) {
 			input:    `YYYY-MM-DD\[T\]HH:mm:ss`,
 			expected: `2006-01-02[T]15:04:05`,
 		},
+		{
+			input:    `YYYY-MM-DD'T'HH:mm:ss`,
+			expected: `2006-01-02T15:04:05`,
+		},
 	}
 
 	for _, testCase := range cases {
