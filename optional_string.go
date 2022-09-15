@@ -86,8 +86,7 @@ func EnumerateOptionalString(optionalString string) (enumerated []string, err er
 		}
 	}
 
-	root := &treeNode{}
-	decode(node, root)
+	root := decode(node)
 
 	f := root.Flatten()
 	out := make([]string, len(f))
@@ -239,8 +238,10 @@ func (n *treeNode) flatten() []rawString {
 	return total
 }
 
-func decode(node parsec.Queryable, root *treeNode) {
+func decode(node parsec.Queryable) *treeNode {
+	root := &treeNode{}
 	recursiveDecode(node.GetChildren(), root)
+	return root
 }
 
 func recursiveDecode(nodes []parsec.Queryable, ctx *treeNode) {
@@ -255,14 +256,20 @@ func recursiveDecode(nodes []parsec.Queryable, ctx *treeNode) {
 		switch nodes[i].GetName() {
 		case OPTIONALSTRING:
 			// skipping first node.
-			recursiveDecode(nodes, ctx)
+			recursiveDecode(nodes[i].GetChildren(), ctx)
 		case OPTIONAL:
 			var optNext *treeNode
 			if !onceFound {
 				onceFound = true
 				optNext = ctx.Left()
 			} else {
-				optNext = ctx.Right()
+				panic(
+					fmt.Sprintf(
+						"incorrect implementation: %s, %s",
+						nodes[i].GetName(),
+						nodes[i].GetValue(),
+					),
+				)
 			}
 			optNext.SetAsOptional()
 			recursiveDecode(nodes[i].GetChildren(), optNext)
