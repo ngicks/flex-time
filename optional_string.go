@@ -3,8 +3,7 @@ package flextime
 import (
 	"fmt"
 
-	"github.com/ngicks/type-param-common/set"
-	"github.com/ngicks/type-param-common/slice"
+	"github.com/ngicks/type-param-common/iterator"
 	"github.com/pkg/errors"
 	parsec "github.com/prataprc/goparsec"
 )
@@ -91,21 +90,12 @@ func EnumerateOptionalString(optionalString string) (enumerated []string, err er
 	decode(node, root)
 
 	f := root.Flatten()
-	// This is what you want.
-	//
-	// out := make([]string, len(f))
-	// for idx, v := range f {
-	// 	out[idx] = v.String()
-	// }
-
-	// But this is it currently needs (returns some overlapping value.)
-	// TODO: fix this.
-	out := set.New[string]()
-	for _, v := range f {
-		out.Add(v.String())
+	out := make([]string, len(f))
+	for idx, v := range f {
+		out[idx] = v.String()
 	}
 
-	return out.Values().Collect(), nil
+	return out, nil
 }
 
 type valueType int
@@ -178,6 +168,10 @@ func (n *treeNode) HasRight() bool {
 
 type rawString []value
 
+func newRawString() rawString {
+	return make(rawString, 0)
+}
+
 func (rs rawString) Clone() rawString {
 	cloned := make(rawString, len(rs))
 	copy(cloned, rs)
@@ -195,42 +189,51 @@ func (rs rawString) String() string {
 	}
 	return out
 }
-
 func (n *treeNode) Flatten() []rawString {
+	return n.flatten()
+}
+func (n *treeNode) flatten() []rawString {
+	// root node must not be optional
+
 	// treeNodes is value of self -> left -> right order.
 	var cur rawString
 	var total []rawString
 	if c := n.Clone(); len(c) > 0 {
 		cur = rawString(c).Clone()
-		total = []rawString{cur.Clone()}
 	} else {
-		total = []rawString{}
+		cur = newRawString()
 	}
+	total = []rawString{cur.Clone()}
 
 	if n.HasLeft() {
-		for _, s := range n.Left().Flatten() {
-			total = append(total, cur.Clone().Append(s))
+		l := n.Left()
+		totalCloned := iterator.
+			FromSlice(total).
+			Collect()
+		total = total[:0]
+		for _, s := range l.flatten() {
+			for _, str := range totalCloned {
+				total = append(total, str.Append(s))
+			}
+		}
+		if l.IsOptional() {
+			total = append(total, cur)
 		}
 	}
 
 	if n.HasRight() {
-		r := n.Right().Flatten()
-		_, hasNonEmpty := slice.Find(r, func(rs rawString) bool { return rs.String() != "" })
-		if hasNonEmpty {
-			org := make([]rawString, len(total))
-			copy(org, total)
-			total = total[:0]
-			for _, rws := range r {
-				for _, oo := range org {
-					total = append(total, oo.Clone().Append(rws))
-				}
+		// right cannot be optional.
+
+		totalCloned := iterator.
+			FromSlice(total).
+			Collect()
+		total = total[:0]
+
+		for _, s := range n.Right().flatten() {
+			for _, str := range totalCloned {
+				total = append(total, str.Append(s))
 			}
 		}
-	}
-
-	if n.IsOptional() && cur.String() != "" {
-		// if optional, add string that does not contain nodes below.
-		total = append(total, rawString{})
 	}
 
 	return total
