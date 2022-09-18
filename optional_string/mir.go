@@ -1,37 +1,37 @@
 package optionalstring
 
 import (
-	"fmt"
-
 	"github.com/ngicks/type-param-common/iterator"
-	parsec "github.com/prataprc/goparsec"
 )
 
 type treeNodeType int
 
 const (
-	text treeNodeType = iota
+	nonOptional treeNodeType = iota
 	optional
 )
 
+// treeNode is node of optional string tree.
+// It is seperated by optional part. left node is always optional.
+// if lower parts have no optional part there must not be child node
 type treeNode struct {
 	left  *treeNode
 	right *treeNode
-	value []Value
+	value []TextNode
 	typ   treeNodeType
 }
 
-func (n *treeNode) Clone() []Value {
+func (n *treeNode) Clone() []TextNode {
 	if n.value == nil {
 		return nil
 	}
-	cloned := make([]Value, len(n.value))
+	cloned := make([]TextNode, len(n.value))
 	copy(cloned, n.value)
 	return cloned
 }
 
 func (n *treeNode) AddValue(v string, typ valueType) {
-	n.value = append(n.value, Value{value: v, typ: typ})
+	n.value = append(n.value, TextNode{value: v, typ: typ})
 }
 
 func (n *treeNode) SetAsOptional() {
@@ -62,21 +62,21 @@ func (n *treeNode) HasRight() bool {
 	return n.right != nil
 }
 
-func (n *treeNode) Flatten() []rawString {
+func (n *treeNode) Flatten() []RawString {
 	return n.flatten()
 }
-func (n *treeNode) flatten() []rawString {
+func (n *treeNode) flatten() []RawString {
 	// root node must not be optional
 
 	// treeNodes is value of self -> left -> right order.
-	var cur rawString
-	var total []rawString
+	var cur RawString
+	var total []RawString
 	if c := n.Clone(); len(c) > 0 {
-		cur = rawString(c).Clone()
+		cur = RawString(c).Clone()
 	} else {
-		cur = newRawString()
+		cur = NewRawString()
 	}
-	total = []rawString{cur.Clone()}
+	total = []RawString{cur.Clone()}
 
 	if n.HasLeft() {
 		l := n.Left()
@@ -110,58 +110,4 @@ func (n *treeNode) flatten() []rawString {
 	}
 
 	return total
-}
-
-func decode(node parsec.Queryable) *treeNode {
-	root := &treeNode{}
-	recursiveDecode(node.GetChildren(), root)
-	return root
-}
-
-func recursiveDecode(nodes []parsec.Queryable, ctx *treeNode) {
-	var onceFound bool
-
-	for i := 0; i < len(nodes); i++ {
-		if onceFound {
-			recursiveDecode(nodes[i:], ctx.Right())
-			return
-		}
-
-		switch nodes[i].GetName() {
-		case OPTIONALSTRING:
-			// skipping first node.
-			recursiveDecode(nodes[i].GetChildren(), ctx)
-		case OPTIONAL:
-			var optNext *treeNode
-			if !onceFound {
-				onceFound = true
-				optNext = ctx.Left()
-			} else {
-				panic(
-					fmt.Sprintf(
-						"incorrect implementation: %s, %s",
-						nodes[i].GetName(),
-						nodes[i].GetValue(),
-					),
-				)
-			}
-			optNext.SetAsOptional()
-			recursiveDecode(nodes[i].GetChildren(), optNext)
-		case CHARS:
-			for _, v := range nodes[i].GetChildren() {
-				switch v.GetName() {
-				case NORMALCHARS:
-					ctx.AddValue(v.GetValue(), Normal)
-				case ESCAPEDCHAR:
-					ctx.AddValue(v.GetValue(), SingleQuoteEscaped)
-				default:
-					panic(fmt.Sprintf("incorrect implementation: %s, %s", v.GetName(), v.GetValue()))
-				}
-			}
-		case ESCAPED:
-			ctx.AddValue(nodes[i].GetValue(), SingleQuoteEscaped)
-		case ITEMS:
-			recursiveDecode(nodes[i].GetChildren(), ctx)
-		}
-	}
 }

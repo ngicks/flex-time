@@ -61,16 +61,14 @@ func (e *FormatError) Error() string {
 	return fmt.Sprintf("index [%d]: %s but %s. %s", e.idx, e.expected, e.actual, e.msg)
 }
 
-func ReplaceTimeTokenRaw(input []optionalstring.Value) (string, error) {
+func ReplaceTimeTokenRaw(input []optionalstring.TextNode) (string, error) {
 	var output string
 	for _, vv := range input {
 		switch vv.Typ() {
-		case optionalstring.SingleQuoteEscaped:
-			output += vv.Value()[1 : vv.Len()-1]
-		case optionalstring.SlashEscaped:
-			output += vv.Value()[1:]
+		case optionalstring.SingleQuoteEscaped, optionalstring.SlashEscaped:
+			output += vv.Unescaped()
 		case optionalstring.Normal:
-			replaced, err := ReplaceTimeToken(vv.Value())
+			replaced, err := ReplaceTimeToken(vv.Unescaped())
 			if err != nil {
 				return "", err
 			}
@@ -312,8 +310,3 @@ func (tt timeFormatToken) toGoFmt() string {
 	}
 	panic(fmt.Sprintf("unknown: %s", tt))
 }
-
-// type fractionOfTime struct {
-// 	token string
-// 	num   int
-// }

@@ -9,76 +9,76 @@ import (
 
 type nodeTestCase struct {
 	input    *treeNode
-	expected []rawString
+	expected []RawString
 }
 
 func TestNode(t *testing.T) {
 	cases := []nodeTestCase{
 		{
 			input: &treeNode{ // [A]
-				typ: text,
+				typ: nonOptional,
 				left: &treeNode{
 					typ:   optional,
-					value: []Value{{typ: Normal, value: "A"}},
+					value: []TextNode{{typ: Normal, value: "A"}},
 				},
 			},
-			expected: []rawString{
+			expected: []RawString{
 				{},
 				{{typ: Normal, value: "A"}},
 			},
 		},
 		{
 			input: &treeNode{ // [A]B
-				typ: text,
+				typ: nonOptional,
 				left: &treeNode{
 					typ:   optional,
-					value: []Value{{typ: Normal, value: "A"}},
+					value: []TextNode{{typ: Normal, value: "A"}},
 				},
 				right: &treeNode{
-					typ:   text,
-					value: []Value{{typ: Normal, value: "B"}},
+					typ:   nonOptional,
+					value: []TextNode{{typ: Normal, value: "B"}},
 				},
 			},
-			expected: []rawString{
+			expected: []RawString{
 				{{typ: Normal, value: "B"}},
 				{{typ: Normal, value: "A"}, {typ: Normal, value: "B"}},
 			},
 		},
 		{
 			input: &treeNode{ // A[B]C
-				typ:   text,
-				value: []Value{{typ: Normal, value: "A"}},
+				typ:   nonOptional,
+				value: []TextNode{{typ: Normal, value: "A"}},
 				left: &treeNode{
 					typ:   optional,
-					value: []Value{{typ: Normal, value: "B"}},
+					value: []TextNode{{typ: Normal, value: "B"}},
 				},
 				right: &treeNode{
-					typ:   text,
-					value: []Value{{typ: Normal, value: "C"}},
+					typ:   nonOptional,
+					value: []TextNode{{typ: Normal, value: "C"}},
 				},
 			},
-			expected: []rawString{
+			expected: []RawString{
 				{{typ: Normal, value: "A"}, {typ: Normal, value: "C"}},
 				{{typ: Normal, value: "A"}, {typ: Normal, value: "B"}, {typ: Normal, value: "C"}},
 			},
 		},
 		{
 			input: &treeNode{ // [A[B]C]
-				typ: text,
+				typ: nonOptional,
 				left: &treeNode{
 					typ:   optional,
-					value: []Value{{typ: Normal, value: "A"}},
+					value: []TextNode{{typ: Normal, value: "A"}},
 					left: &treeNode{
 						typ:   optional,
-						value: []Value{{typ: Normal, value: "B"}},
+						value: []TextNode{{typ: Normal, value: "B"}},
 					},
 					right: &treeNode{
-						typ:   text,
-						value: []Value{{typ: Normal, value: "C"}},
+						typ:   nonOptional,
+						value: []TextNode{{typ: Normal, value: "C"}},
 					},
 				},
 			},
-			expected: []rawString{
+			expected: []RawString{
 				{},
 				{{typ: Normal, value: "A"}, {typ: Normal, value: "C"}},
 				{{typ: Normal, value: "A"}, {typ: Normal, value: "B"}, {typ: Normal, value: "C"}},

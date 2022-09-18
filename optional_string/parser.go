@@ -59,7 +59,7 @@ func (e SyntaxError) Error() string {
 	)
 }
 
-func EnumerateOptionalStringRaw(optionalString string) (enumerated []rawString, err error) {
+func EnumerateOptionalStringRaw(optionalString string) (enumerated []RawString, err error) {
 	var node parsec.Queryable
 	func() {
 		defer func() {
@@ -79,7 +79,7 @@ func EnumerateOptionalStringRaw(optionalString string) (enumerated []rawString, 
 	}
 
 	if parsedAs := node.GetValue(); len(parsedAs) != len(optionalString) {
-		return []rawString{}, &SyntaxError{
+		return []RawString{}, &SyntaxError{
 			Input:    optionalString,
 			ParsedAs: parsedAs,
 		}
@@ -101,4 +101,58 @@ func EnumerateOptionalString(optionalString string) (enumerated []string, err er
 		out[idx] = v.String()
 	}
 	return out, nil
+}
+
+func decode(node parsec.Queryable) *treeNode {
+	root := &treeNode{}
+	recursiveDecode(node.GetChildren(), root)
+	return root
+}
+
+func recursiveDecode(nodes []parsec.Queryable, ctx *treeNode) {
+	var onceFound bool
+
+	for i := 0; i < len(nodes); i++ {
+		if onceFound {
+			recursiveDecode(nodes[i:], ctx.Right())
+			return
+		}
+
+		switch nodes[i].GetName() {
+		case OPTIONALSTRING:
+			// skipping first node.
+			recursiveDecode(nodes[i].GetChildren(), ctx)
+		case OPTIONAL:
+			var optNext *treeNode
+			if !onceFound {
+				onceFound = true
+				optNext = ctx.Left()
+			} else {
+				panic(
+					fmt.Sprintf(
+						"incorrect implementation: %s, %s",
+						nodes[i].GetName(),
+						nodes[i].GetValue(),
+					),
+				)
+			}
+			optNext.SetAsOptional()
+			recursiveDecode(nodes[i].GetChildren(), optNext)
+		case CHARS:
+			for _, v := range nodes[i].GetChildren() {
+				switch v.GetName() {
+				case NORMALCHARS:
+					ctx.AddValue(v.GetValue(), Normal)
+				case ESCAPEDCHAR:
+					ctx.AddValue(v.GetValue(), SingleQuoteEscaped)
+				default:
+					panic(fmt.Sprintf("incorrect implementation: %s, %s", v.GetName(), v.GetValue()))
+				}
+			}
+		case ESCAPED:
+			ctx.AddValue(nodes[i].GetValue(), SingleQuoteEscaped)
+		case ITEMS:
+			recursiveDecode(nodes[i].GetChildren(), ctx)
+		}
+	}
 }
