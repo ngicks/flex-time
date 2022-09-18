@@ -48,15 +48,15 @@ func MakeOptionalStringParser(ast *parsec.AST) parsec.Parser {
 }
 
 type SyntaxError struct {
-	org      string
-	parsedAs string
+	Input    string
+	ParsedAs string
 }
 
 func (e SyntaxError) Error() string {
 	return fmt.Sprintf(
 		"syntax error: maybe no opening/closing sqrt? parsed result = %s, input = %s",
-		e.parsedAs,
-		e.org,
+		e.ParsedAs,
+		e.Input,
 	)
 }
 
@@ -81,15 +81,14 @@ func EnumerateOptionalStringRaw(optionalString string) (enumerated []rawString, 
 
 	if parsedAs := node.GetValue(); len(parsedAs) != len(optionalString) {
 		return []rawString{}, &SyntaxError{
-			org:      optionalString,
-			parsedAs: parsedAs,
+			Input:    optionalString,
+			ParsedAs: parsedAs,
 		}
 	}
 
 	root := decode(node)
 
 	return root.Flatten(), nil
-
 }
 
 func EnumerateOptionalString(optionalString string) (enumerated []string, err error) {
