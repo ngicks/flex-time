@@ -155,7 +155,7 @@ func getUntilClosingSingleSquote(input string) string {
 			if i == 0 {
 				return ""
 			}
-			if input[i-1] != '\\' {
+			if input[i-1] != '\\' || strings.HasSuffix(input[:i+1], `\\'`) {
 				return input[:i]
 			}
 		}
