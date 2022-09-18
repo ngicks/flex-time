@@ -1,4 +1,4 @@
-package flextime
+package optionalstring
 
 import (
 	"sort"
@@ -19,12 +19,12 @@ func TestNode(t *testing.T) {
 				typ: text,
 				left: &treeNode{
 					typ:   optional,
-					value: []value{{typ: normal, value: "A"}},
+					value: []Value{{typ: Normal, value: "A"}},
 				},
 			},
 			expected: []rawString{
 				{},
-				{{typ: normal, value: "A"}},
+				{{typ: Normal, value: "A"}},
 			},
 		},
 		{
@@ -32,34 +32,34 @@ func TestNode(t *testing.T) {
 				typ: text,
 				left: &treeNode{
 					typ:   optional,
-					value: []value{{typ: normal, value: "A"}},
+					value: []Value{{typ: Normal, value: "A"}},
 				},
 				right: &treeNode{
 					typ:   text,
-					value: []value{{typ: normal, value: "B"}},
+					value: []Value{{typ: Normal, value: "B"}},
 				},
 			},
 			expected: []rawString{
-				{{typ: normal, value: "B"}},
-				{{typ: normal, value: "A"}, {typ: normal, value: "B"}},
+				{{typ: Normal, value: "B"}},
+				{{typ: Normal, value: "A"}, {typ: Normal, value: "B"}},
 			},
 		},
 		{
 			input: &treeNode{ // A[B]C
 				typ:   text,
-				value: []value{{typ: normal, value: "A"}},
+				value: []Value{{typ: Normal, value: "A"}},
 				left: &treeNode{
 					typ:   optional,
-					value: []value{{typ: normal, value: "B"}},
+					value: []Value{{typ: Normal, value: "B"}},
 				},
 				right: &treeNode{
 					typ:   text,
-					value: []value{{typ: normal, value: "C"}},
+					value: []Value{{typ: Normal, value: "C"}},
 				},
 			},
 			expected: []rawString{
-				{{typ: normal, value: "A"}, {typ: normal, value: "C"}},
-				{{typ: normal, value: "A"}, {typ: normal, value: "B"}, {typ: normal, value: "C"}},
+				{{typ: Normal, value: "A"}, {typ: Normal, value: "C"}},
+				{{typ: Normal, value: "A"}, {typ: Normal, value: "B"}, {typ: Normal, value: "C"}},
 			},
 		},
 		{
@@ -67,21 +67,21 @@ func TestNode(t *testing.T) {
 				typ: text,
 				left: &treeNode{
 					typ:   optional,
-					value: []value{{typ: normal, value: "A"}},
+					value: []Value{{typ: Normal, value: "A"}},
 					left: &treeNode{
 						typ:   optional,
-						value: []value{{typ: normal, value: "B"}},
+						value: []Value{{typ: Normal, value: "B"}},
 					},
 					right: &treeNode{
 						typ:   text,
-						value: []value{{typ: normal, value: "C"}},
+						value: []Value{{typ: Normal, value: "C"}},
 					},
 				},
 			},
 			expected: []rawString{
 				{},
-				{{typ: normal, value: "A"}, {typ: normal, value: "C"}},
-				{{typ: normal, value: "A"}, {typ: normal, value: "B"}, {typ: normal, value: "C"}},
+				{{typ: Normal, value: "A"}, {typ: Normal, value: "C"}},
+				{{typ: Normal, value: "A"}, {typ: Normal, value: "B"}, {typ: Normal, value: "C"}},
 			},
 		},
 	}

@@ -1,11 +1,11 @@
-package flextime_test
+package optionalstring_test
 
 import (
 	"fmt"
 	"sort"
 	"testing"
 
-	"github.com/ngicks/flextime"
+	optionalstring "github.com/ngicks/flextime/optional_string"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -70,7 +70,7 @@ func TestMakeVariantsOptinalString(t *testing.T) {
 
 	for _, testCase := range cases {
 		t.Run(fmt.Sprintf("case: %s", testCase.input), func(t *testing.T) {
-			result, err := flextime.EnumerateOptionalString(testCase.input)
+			result, err := optionalstring.EnumerateOptionalString(testCase.input)
 			require.NoError(t, err)
 			sort.Strings(result)
 			sort.Strings(testCase.output)
@@ -91,7 +91,7 @@ func TestOptionalNonClosing(t *testing.T) {
 	}
 
 	for _, input := range cases {
-		_, err := flextime.EnumerateOptionalString(input)
+		_, err := optionalstring.EnumerateOptionalString(input)
 		require.Error(t, err)
 	}
 }

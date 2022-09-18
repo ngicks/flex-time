@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	optionalstring "github.com/ngicks/flextime/optional_string"
 )
 
 type Parser struct {
@@ -12,7 +14,7 @@ type Parser struct {
 }
 
 func Compile(optionalStr string) (*Parser, error) {
-	rawFormats, err := EnumerateOptionalStringRaw(optionalStr)
+	rawFormats, err := optionalstring.EnumerateOptionalStringRaw(optionalStr)
 	if err != nil {
 		return nil, err
 	}
@@ -59,16 +61,16 @@ func (e *FormatError) Error() string {
 	return fmt.Sprintf("index [%d]: %s but %s. %s", e.idx, e.expected, e.actual, e.msg)
 }
 
-func ReplaceTimeTokenRaw(input []value) (string, error) {
+func ReplaceTimeTokenRaw(input []optionalstring.Value) (string, error) {
 	var output string
 	for _, vv := range input {
-		switch vv.typ {
-		case singleQuoteEscaped:
-			output += vv.value[1 : len(vv.value)-1]
-		case slashEscaped:
-			output += vv.value[1:]
-		case normal:
-			replaced, err := ReplaceTimeToken(vv.value)
+		switch vv.Typ() {
+		case optionalstring.SingleQuoteEscaped:
+			output += vv.Value()[1 : vv.Len()-1]
+		case optionalstring.SlashEscaped:
+			output += vv.Value()[1:]
+		case optionalstring.Normal:
+			replaced, err := ReplaceTimeToken(vv.Value())
 			if err != nil {
 				return "", err
 			}
