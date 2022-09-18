@@ -43,7 +43,7 @@ func MakeOptionalStringParser(ast *parsec.AST) parsec.Parser {
 	item := ast.OrdChoice(ITEM, nil, chars, escaped, &optional)
 	items := ast.Kleene(ITEMS, nil, item)
 	optional = ast.And(OPTIONAL, nil, opensqr, items, closesqr)
-	return ast.Kleene(OPTIONALSTRING, nil, ast.OrdChoice("items", nil, optional, chars))
+	return ast.Kleene(OPTIONALSTRING, nil, ast.OrdChoice("items", nil, optional, item))
 }
 
 type SyntaxError struct {

@@ -66,6 +66,25 @@ func TestMakeVariantsOptinalString(t *testing.T) {
 				`-DDTHH:mm:ss.SSSZ`,
 			},
 		},
+		{
+			input: `A[B]C`,
+			output: []string{
+				`ABC`,
+				`AC`,
+			},
+		},
+		{
+			input: `ABC`,
+			output: []string{
+				`ABC`,
+			},
+		},
+		{
+			input: `A'B'C`,
+			output: []string{
+				`A'B'C`,
+			},
+		},
 	}
 
 	for _, testCase := range cases {
