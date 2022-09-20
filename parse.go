@@ -2,53 +2,10 @@ package flextime
 
 import (
 	"fmt"
-	"sort"
 	"strings"
-	"time"
 
 	optionalstring "github.com/ngicks/flextime/optional_string"
 )
-
-type Parser struct {
-	formats []string
-}
-
-func Compile(optionalStr string) (*Parser, error) {
-	rawFormats, err := optionalstring.EnumerateOptionalStringRaw(optionalStr)
-	if err != nil {
-		return nil, err
-	}
-
-	sort.Slice(rawFormats, func(i, j int) bool {
-		return len(rawFormats[i].String()) > len(rawFormats[j].String())
-	})
-
-	formats := make([]string, len(rawFormats))
-	for i := 0; i < len(rawFormats); i++ {
-		replaced, err := ReplaceTimeTokenRaw(rawFormats[i])
-		if err != nil {
-			return nil, err
-		}
-		formats[i] = replaced
-	}
-
-	return &Parser{
-		formats: formats,
-	}, nil
-}
-
-func (p *Parser) Parse(value string) (time.Time, error) {
-	var lastErr error
-	for _, layout := range p.formats {
-		t, err := time.Parse(layout, value)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		return t, nil
-	}
-	return time.Time{}, lastErr
-}
 
 type FormatError struct {
 	idx      int
@@ -61,7 +18,7 @@ func (e *FormatError) Error() string {
 	return fmt.Sprintf("index [%d]: %s but %s. %s", e.idx, e.expected, e.actual, e.msg)
 }
 
-func ReplaceTimeTokenRaw(input []optionalstring.TextNode) (string, error) {
+func ReplaceTimeTokenRaw(input optionalstring.RawString) (string, error) {
 	var output string
 	for _, vv := range input {
 		switch vv.Typ() {

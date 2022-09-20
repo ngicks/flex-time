@@ -8,6 +8,7 @@ flex-time tries to bring YYYY-MM-DDTHH:mm:ss.SSSZ format parsing to Go lang.
 
 - escape
   - escape single character by placing proceeding backward-slash (`\`).
+  - escape bunch of characters by enclose with single quote.
 - optional parts
   - make string inside `[]` as optional part.
 
@@ -17,6 +18,7 @@ Available tokens are shown in the table below:
 | --------- | ------------------ | ------------------------------- |
 | []        | N/A                | escape as optional              |
 | \\        | N/A                | escape one succeeding character |
+| ''        | N/A                | escape quoted characters        |
 | MMMM      | "January"          |                                 |
 | MMM       | "Jan"              |                                 |
 | M         | "1"                |                                 |
@@ -67,6 +69,16 @@ The implementation is pretty dumb.
     - `YYYY-MM-DDZ`,
     - `YYYY-MM-DD`,
 - Convert all the `YYYY` `MM` things into golang time layout tokens, `2006` and `01`.
-- Then count length of input date-time string. Use nearest longer layout first.
-- If time.(`Parse`|`ParseInLocation`) with one layout fails, try one shorter format.
-- If no shorter
+- Then sort layouts by length in descending order.
+  - so in above case, sorted like:
+    - `2006-01-02T15:04:05.000Z07:00`,
+    - `2006-01-02T15:04:05.000`,
+    - `2006-01-02T15:04Z07:00`,
+    - `2006-01-02T15Z07:00`,
+    - `2006-01-02T15:04`,
+    - `2006-01-02Z07:00`,
+    - `2006-01-02T15`,
+    - `2006-01-02`,
+- Try parsing with layout one by one, longer to shorter.
+- Return time.Time on first non-error.
+- Return last error if all layouts fails.

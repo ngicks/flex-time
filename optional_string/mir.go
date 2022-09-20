@@ -13,7 +13,7 @@ const (
 
 // treeNode is node of optional string tree.
 // It is seperated by optional part. left node is always optional.
-// if lower parts have no optional part there must not be child node
+// if lower parts have no optional part the node must not have child nodes.
 type treeNode struct {
 	left  *treeNode
 	right *treeNode
