@@ -16,11 +16,11 @@ type replaceTimeTokenTestCase struct {
 func TestReplaceTimeToken(t *testing.T) {
 	cases := []replaceTimeTokenTestCase{
 		{
-			input:    "yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ07:00",
+			input:    "yyyy-MM-ddTHH:mm:ss.SSSSSSSSSZ",
 			expected: "2006-01-02T15:04:05.000000000Z07:00",
 		},
 		{
-			input:    "YYYY-MM-DDTHH:mm:ss.999999999Z07:00",
+			input:    "YYYY-MM-DDTHH:mm:ss.999999999Z",
 			expected: "2006-01-02T15:04:05.999999999Z07:00",
 		},
 		{
