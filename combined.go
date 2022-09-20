@@ -21,39 +21,6 @@ func NewCombined(parsers []*Flextime, numParser func(int64) time.Time) *Combined
 	}
 }
 
-type ValueOutOfRangeError struct {
-	Value uint64
-}
-
-func (e *ValueOutOfRangeError) Error() string {
-	return fmt.Sprintf(
-		"value out of range: value must be less than max of int64 but is %d",
-		e.Value,
-	)
-}
-
-var ErrEmptyNumParser = errors.New("empty num parser")
-
-type UnsupportedTypeError struct {
-	Typ reflect.Kind
-}
-
-func (e *UnsupportedTypeError) Error() string {
-	return fmt.Sprintf(
-		"unsupported type: value must be one of Int, Uint, Float variant, String"+
-			" or []byte which represents a valid json value and that can be unmarshalled into"+
-			" string or float64 but is %s",
-		e.Typ.String())
-}
-
-type UnmarshalError struct {
-	Err error
-}
-
-func (e UnmarshalError) Error() string {
-	return fmt.Sprintf("unmarshal failed: %v", e.Err)
-}
-
 func (c *CombinedFlextime) Parse(v any) (time.Time, error) {
 	return c.parse(v, false, nil)
 }
@@ -137,4 +104,37 @@ func (c *CombinedFlextime) parse(v any, inLoc bool, loc *time.Location) (time.Ti
 		}
 	}
 	return time.Time{}, &UnsupportedTypeError{Typ: rv.Kind()}
+}
+
+var ErrEmptyNumParser = errors.New("empty num parser")
+
+type ValueOutOfRangeError struct {
+	Value uint64
+}
+
+func (e *ValueOutOfRangeError) Error() string {
+	return fmt.Sprintf(
+		"value out of range: value must be less than max of int64 but is %d",
+		e.Value,
+	)
+}
+
+type UnsupportedTypeError struct {
+	Typ reflect.Kind
+}
+
+func (e *UnsupportedTypeError) Error() string {
+	return fmt.Sprintf(
+		"unsupported type: value must be one of Int, Uint, Float variant, String"+
+			" or []byte which represents a valid json value and that can be unmarshalled into"+
+			" string or float64 but is %s",
+		e.Typ.String())
+}
+
+type UnmarshalError struct {
+	Err error
+}
+
+func (e UnmarshalError) Error() string {
+	return fmt.Sprintf("unmarshal failed: %v", e.Err)
 }
