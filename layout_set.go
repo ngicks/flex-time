@@ -56,10 +56,14 @@ func NewSingleLayout(layout string) (*LayoutSet, error) {
 	}, nil
 }
 
-func (l *LayoutSet) Layout() []string {
+func (l *LayoutSet) CloneLayout() []string {
 	cloend := make([]string, len(l.layouts))
 	copy(cloend, l.layouts)
 	return cloend
+}
+
+func (l *LayoutSet) Layout() []string {
+	return l.layouts
 }
 
 func (l *LayoutSet) AddLayout(other *LayoutSet) *LayoutSet {
