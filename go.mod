@@ -3,6 +3,7 @@ module github.com/ngicks/flextime
 go 1.19
 
 require (
+	github.com/google/go-cmp v0.5.9
 	github.com/ngicks/type-param-common v0.0.14
 	github.com/pkg/errors v0.9.1
 	github.com/prataprc/goparsec v0.0.0-20211219142520-daac0e635e7e
