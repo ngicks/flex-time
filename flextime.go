@@ -6,32 +6,19 @@ import (
 
 type Option func(f *Flextime)
 
-func TryAllLayouts(f *Flextime) {
-	f.tryAllLayouts = true
-}
-
 type Flextime struct {
-	tryAllLayouts bool
-	layouts       *LayoutSet
+	layouts *LayoutSet
 }
 
-func NewMultiLayoutParser(layouts *LayoutSet, options ...Option) *Flextime {
+func NewFlextime(layouts *LayoutSet) *Flextime {
 	return &Flextime{
 		layouts: layouts,
 	}
 }
 
-func Compile(optionalStr string, options ...Option) (*Flextime, error) {
-	layouts, err := NewLayoutSet(optionalStr)
-	if err != nil {
-		return nil, err
-	}
-	return NewMultiLayoutParser(layouts, options...), nil
-}
-
-func (p *Flextime) parse(value string, parser func(layout, value string) (time.Time, error)) (time.Time, error) {
+func (f *Flextime) parse(value string, parser func(layout, value string) (time.Time, error)) (time.Time, error) {
 	var lastErr error
-	for _, layout := range p.layouts.Layout() {
+	for _, layout := range f.layouts.Layout() {
 		t, err := parser(layout, value)
 		if err != nil {
 			lastErr = err
@@ -42,15 +29,15 @@ func (p *Flextime) parse(value string, parser func(layout, value string) (time.T
 	return time.Time{}, lastErr
 }
 
-func (p *Flextime) Parse(value string) (time.Time, error) {
-	return p.parse(
+func (f *Flextime) Parse(value string) (time.Time, error) {
+	return f.parse(
 		value,
 		func(layout, value string) (time.Time, error) { return time.Parse(layout, value) },
 	)
 }
 
-func (p *Flextime) ParseInLocation(value string, loc *time.Location) (time.Time, error) {
-	return p.parse(
+func (f *Flextime) ParseInLocation(value string, loc *time.Location) (time.Time, error) {
+	return f.parse(
 		value,
 		func(
 			layout, value string,
@@ -66,7 +53,6 @@ func (p *Flextime) LayoutSet() *LayoutSet {
 
 func (p *Flextime) AddLayout(other *LayoutSet) *Flextime {
 	return &Flextime{
-		layouts:       p.layouts.AddLayout(other),
-		tryAllLayouts: p.tryAllLayouts,
+		layouts: p.layouts.AddLayout(other),
 	}
 }

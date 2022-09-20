@@ -21,13 +21,13 @@ func init() {
 }
 
 func TestFlextime(t *testing.T) {
-	p, err := flextime.Compile(`YYYY-MM-DD[THH[:mm[:ss.SSS]]][Z]`)
+	l, err := flextime.NewLayoutSet(`YYYY-MM-DD[THH[:mm[:ss.SSS]]][Z]`)
 	require.NoError(t, err)
+	p := flextime.NewFlextime(l)
 	var parsed time.Time
 	parsed, err = p.Parse("2022-10-20T23:16:22.168+09:00")
 	require.NoError(t, err)
 	require.Condition(t, func() (success bool) {
 		return time.Date(2022, time.October, 20, 23, 16, 22, 168000000, jst).Equal(parsed)
 	})
-
 }
