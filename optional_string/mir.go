@@ -48,6 +48,7 @@ func (n *treeNode) Left() *treeNode {
 	}
 	return n.left
 }
+
 func (n *treeNode) HasLeft() bool {
 	return n.left != nil
 }
@@ -58,6 +59,7 @@ func (n *treeNode) Right() *treeNode {
 	}
 	return n.right
 }
+
 func (n *treeNode) HasRight() bool {
 	return n.right != nil
 }
@@ -65,6 +67,7 @@ func (n *treeNode) HasRight() bool {
 func (n *treeNode) Flatten() []RawString {
 	return n.flatten()
 }
+
 func (n *treeNode) flatten() []RawString {
 	// root node must not be optional
 

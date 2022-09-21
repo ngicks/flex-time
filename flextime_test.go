@@ -8,9 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	jst *time.Location
-)
+var jst *time.Location
 
 func init() {
 	var err error

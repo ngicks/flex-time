@@ -96,7 +96,6 @@ func TestMakeVariantsOptinalString(t *testing.T) {
 			assert.Equal(t, testCase.output, result)
 		})
 	}
-
 }
 
 func TestOptionalNonClosing(t *testing.T) {

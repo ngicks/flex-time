@@ -98,5 +98,4 @@ func TestNode(t *testing.T) {
 
 		assert.Equal(t, tc.expected, flatten)
 	}
-
 }
