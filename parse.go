@@ -71,7 +71,7 @@ func nextToken(input string) (prefix string, found string, suffix string, isToke
 				return input[:i], "." + repeated, input[i+len("."+repeated):], true, nil
 			}
 		case '\'':
-			unescaped := getUntilClosingSingleSquote(input[i+1:])
+			unescaped := getUntilClosingSingleQuote(input[i+1:])
 			return input[:i], unescaped, input[i+len(`'`+unescaped+`'`):], false, nil
 		}
 
@@ -105,8 +105,8 @@ func getRepeatOf(input string, target string) string {
 	return input
 }
 
-// getUntilClosingSingleSquote returns `aaaaa` if input is `aaaaa'`.
-func getUntilClosingSingleSquote(input string) string {
+// getUntilClosingSingleQuote returns `aaaaa` if input is `aaaaa'`.
+func getUntilClosingSingleQuote(input string) string {
 	for i := 0; i < len(input); i++ {
 		if input[i] == '\'' {
 			if i == 0 {

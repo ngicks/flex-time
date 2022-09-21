@@ -7,7 +7,7 @@ type simpleCase[T any] struct {
 	expected T
 }
 
-func TestGetUntilClosingSingleSquote(t *testing.T) {
+func TestGetUntilClosingSingleQuote(t *testing.T) {
 	cases := []simpleCase[string]{
 		{
 			input:    `aaaa'`,
@@ -28,7 +28,7 @@ func TestGetUntilClosingSingleSquote(t *testing.T) {
 	}
 
 	for _, testCase := range cases {
-		result := getUntilClosingSingleSquote(testCase.input)
+		result := getUntilClosingSingleQuote(testCase.input)
 
 		if testCase.expected != result {
 			t.Errorf("not equal. expected = %s, actual = %s", testCase.expected, result)
