@@ -4,8 +4,6 @@ import (
 	"time"
 )
 
-type Option func(f *Flextime)
-
 type Flextime struct {
 	layouts *LayoutSet
 }
