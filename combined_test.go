@@ -1,6 +1,7 @@
 package flextime_test
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -21,45 +22,52 @@ func TestCombined(t *testing.T) {
 			expected: time.Date(2022, 10, 20, 16, 22, 46, 123000000, time.UTC),
 		},
 		{
+			input:    uint64(1666282966123),
+			expected: time.Date(2022, 10, 20, 16, 22, 46, 123000000, time.UTC),
+		},
+		{
 			// 1666282966123
-			input:    []byte{49, 54, 54, 54, 50, 56, 50, 57, 54, 54, 49, 50, 51},
+			input:    []byte("1666282966123"),
 			expected: time.Date(2022, 10, 20, 16, 22, 46, 123000000, time.UTC),
 		},
 		{
-			//"2022-10-20T16:22:46.123Z"
-			input:    []byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 84, 49, 54, 58, 50, 50, 58, 52, 54, 46, 49, 50, 51, 90, 34},
+			input:    []byte(`"2022-10-20T16:22:46.123+09:00"`),
+			expected: time.Date(2022, 10, 20, 16, 22, 46, 123000000, jst),
+		},
+		{
+			input:    []byte(`"2022-10-20T16:22:46.123"`),
 			expected: time.Date(2022, 10, 20, 16, 22, 46, 123000000, time.UTC),
 		},
 		{
-			input:    []byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 84, 49, 54, 58, 50, 50, 58, 52, 54, 46, 49, 50, 51, 34},
-			expected: time.Date(2022, 10, 20, 16, 22, 46, 123000000, time.UTC),
+			input:    []byte(`"2022-10-20T16:22:46+09:00"`),
+			expected: time.Date(2022, 10, 20, 16, 22, 46, 0, jst),
 		},
 		{
-			input:    []byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 84, 49, 54, 58, 50, 50, 58, 52, 54, 90, 34},
+			input:    []byte(`"2022-10-20T16:22:46"`),
 			expected: time.Date(2022, 10, 20, 16, 22, 46, 0, time.UTC),
 		},
 		{
-			input:    []byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 84, 49, 54, 58, 50, 50, 58, 52, 54, 34},
-			expected: time.Date(2022, 10, 20, 16, 22, 46, 0, time.UTC),
+			input:    []byte(`"2022-10-20T16:22+09:00"`),
+			expected: time.Date(2022, 10, 20, 16, 22, 0, 0, jst),
 		},
 		{
-			input:    []byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 84, 49, 54, 58, 50, 50, 90, 34},
+			input:    []byte(`"2022-10-20T16:22"`),
 			expected: time.Date(2022, 10, 20, 16, 22, 0, 0, time.UTC),
 		},
 		{
-			input:    []byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 84, 49, 54, 58, 50, 50, 34},
-			expected: time.Date(2022, 10, 20, 16, 22, 0, 0, time.UTC),
+			input:    []byte(`"2022-10-20T16+09:00"`),
+			expected: time.Date(2022, 10, 20, 16, 0, 0, 0, jst),
 		},
 		{
-			input:    []byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 84, 49, 54, 90, 34},
+			input:    []byte(`"2022-10-20T16"`),
 			expected: time.Date(2022, 10, 20, 16, 0, 0, 0, time.UTC),
 		},
 		{
-			input:    []byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 84, 49, 54, 34},
-			expected: time.Date(2022, 10, 20, 16, 0, 0, 0, time.UTC),
+			input:    []byte(`"2022-10-20+09:00"`),
+			expected: time.Date(2022, 10, 20, 0, 0, 0, 0, jst),
 		},
 		{
-			input:    []byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 34},
+			input:    []byte(`"2022-10-20"`),
 			expected: time.Date(2022, 10, 20, 0, 0, 0, 0, time.UTC),
 		},
 		{
@@ -103,9 +111,6 @@ func TestCombined(t *testing.T) {
 			expected: time.Date(2022, 10, 20, 0, 0, 0, 0, time.UTC),
 		},
 	}
-	expected := time.Date(2022, 10, 20, 16, 22, 46, 123000000, time.UTC)
-
-	t.Logf("%d", expected.UnixMilli())
 
 	for _, testCase := range cases {
 		parsed, err := flextime.RFC3339orUnixMilli.ParseInLocation(testCase.input, time.UTC)
@@ -126,8 +131,52 @@ func TestCombined(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Conditionf(
 			t,
-			func() (success bool) { return expectedInLocal.Equal(parsed) },
+			func() (success bool) {
+				return expectedInLocal.Equal(parsed) && expectedInLocal.Format("Z07:00") == parsed.Format("Z07:00")
+			},
 			cmp.Diff(expectedInLocal, parsed),
 		)
 	}
+}
+
+func TestCombinedError(t *testing.T) {
+	var err error
+
+	var parseError *time.ParseError
+	for _, invalid := range []any{"2022-10-20T16:2a2:46.123+09:00", "22-10-20T16:22:46.123+09:00"} {
+		_, err = flextime.RFC3339orUnixMilli.ParseInLocation(invalid, nil)
+		assert.ErrorAs(t, err, &parseError)
+	}
+
+	var unsupportedTypeError *flextime.UnsupportedTypeError
+	for _, invalid := range []any{
+		false,
+		true,
+		struct{}{},
+		[3]int{1, 2, 3},
+		[...]byte{34, 50, 48, 50, 50, 45, 49, 48, 45, 50, 48, 34},
+	} {
+		_, err = flextime.RFC3339orUnixMilli.ParseInLocation(invalid, nil)
+		assert.ErrorAs(t, err, &unsupportedTypeError)
+	}
+
+	var unmarshalError *flextime.UnmarshalError
+	for _, nonUnmarshalable := range []any{[]byte("foobar"), []byte("123q")} {
+		_, err = flextime.RFC3339orUnixMilli.ParseInLocation(nonUnmarshalable, nil)
+		assert.ErrorAs(t, err, &unmarshalError)
+	}
+
+	var valueOutOfRangeError *flextime.ValueOutOfRangeError
+	for i := 1; i < 100; i++ {
+		_, err = flextime.RFC3339orUnixMilli.ParseInLocation(uint64(math.MaxInt64)+uint64(i), nil)
+		assert.ErrorAs(t, err, &valueOutOfRangeError)
+	}
+
+	p := flextime.NewCombined(
+		[]*flextime.Flextime{flextime.NewFlextime(flextime.RFC3339Optinal)},
+		nil,
+	)
+
+	_, err = p.Parse(1666282966123)
+	assert.ErrorIs(t, err, flextime.ErrEmptyNumParser)
 }
