@@ -125,7 +125,7 @@ var tokenSerachTable = map[byte][]timeFormatToken{
 	'w': {"ww", "w"},
 	'd': {"ddd", "dd", "d"},
 	'D': {"DDD", "DD", "D"},
-	'H': {"HH", "H"},
+	'H': {"HH"},
 	'h': {"hh", "h"},
 	'm': {"mm", "m"},
 	's': {"ss", "s"},
