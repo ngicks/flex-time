@@ -82,7 +82,7 @@ func nextToken(input string) (prefix string, found string, suffix string, isToke
 					return input[:i], string(possible), input[i+len(possible):], true, nil
 				}
 			}
-			if input[0] == '-' {
+			if input[i] == '-' {
 				continue
 			}
 			return "", "", "", false, &FormatError{
