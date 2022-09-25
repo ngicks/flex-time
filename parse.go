@@ -1,269 +1,178 @@
+// many of code copied from `time` package
+// so keep it credited:
+
+// Copyright (c) 2009 The Go Authors. All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+//    * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//    * Redistributions in binary form must reproduce the above
+// copyright notice, this list of conditions and the following disclaimer
+// in the documentation and/or other materials provided with the
+// distribution.
+//    * Neither the name of Google Inc. nor the names of its
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// modified parts are governed by a license described in LICENSE file.
+
 package flextime
 
 import (
-	"fmt"
 	"strings"
-
-	optionalstring "github.com/ngicks/flextime/optional_string"
+	"time"
+	"unicode/utf8"
 )
 
-type FormatError struct {
-	idx      int
-	expected string
-	actual   string
-	msg      string
+func Parse(layout, value string) (time.Time, error) {
+	return parse(layout, value, time.UTC, time.Local)
 }
 
-func (e *FormatError) Error() string {
-	return fmt.Sprintf("index [%d]: %s but %s. %s", e.idx, e.expected, e.actual, e.msg)
+func ParseInLocation(layout, value string, loc *time.Location) (time.Time, error) {
+	return parse(layout, value, loc, loc)
 }
 
-func ReplaceTimeTokenRaw(input optionalstring.RawString) (string, error) {
-	var output string
-	for _, vv := range input {
-		switch vv.Typ() {
-		case optionalstring.SingleQuoteEscaped, optionalstring.SlashEscaped:
-			output += vv.Unescaped()
-		case optionalstring.Normal:
-			replaced, err := ReplaceTimeToken(vv.Unescaped())
-			if err != nil {
-				return "", err
-			}
-			output += string(replaced)
-		}
-	}
-	return output, nil
-}
+func parse(layout, value string, defaultLocation, local *time.Location) (time.Time, error) {
+	orgLayout, orgValue := layout, value
+	var year int
+	var month, day, hour, min, sec, nsec int
+	var loc *time.Location
 
-func ReplaceTimeToken(input string) (string, error) {
-	var prefix, token string
-	var isToken bool
 	var err error
+	var rangeErrString string
+	var prefix string
+	var token tokenId
 
-	var output string
-
-	for len(input) > 0 {
-		prefix, token, input, isToken, err = nextToken(input)
-		if err != nil {
-			return "", err
+	for len(layout) > 0 {
+		prefix, token, layout = nextToken(layout)
+		if !strings.HasPrefix(value, prefix) {
+			return time.Time{}, &time.ParseError{
+				Layout:     orgLayout,
+				Value:      orgValue,
+				LayoutElem: "",
+				ValueElem:  prefix,
+				Message:    ":value does not have exact same non elem string",
+			}
 		}
-		output += prefix
-		if isToken {
-			output += timeFormatToken(token).toGoFmt()
-		} else {
-			output += token
+		value = value[:len(prefix)]
+
+		switch token.T() {
+		case invalid:
+			if value != "" {
+				return time.Time{}, &time.ParseError{
+					Layout:     orgLayout,
+					Value:      orgValue,
+					LayoutElem: "",
+					ValueElem:  value,
+					Message:    ": extra text: " + value, // no quote to value atm.
+				}
+			}
+		case goLongMonth, isoLongMonth:
+			month, value, err = lookup(longMonthNames, value, false)
+			month++
+		case goMonth, isoMonth:
+			month, value, err = lookup(shortMonthNames, value, false)
+			month++
+		case goNumMonth, isoNumMonth, goZeroMonth, isoZeroMonth:
+			month, value, err = getnum(value, token == goZeroMonth || token == isoZeroMonth)
+			if err == nil && (month <= 0 || 12 < month) {
+				rangeErrString = "month"
+			}
+		case goLongWeekDay:
+		case goWeekDay:
+		case goDay, isoDay:
+		case goUnderDay:
+		case goZeroDay, isoZeroDay:
+		case goUnderYearDay:
+		case goZeroYearDay, isoZeroYearDay:
+		case isoHour:
+		case goHour, isoZeroHour:
+		case goHour12, isoHour12:
+		case goZeroHour12, isoZeroHour12:
+		case goMinute, isoMinute:
+		case goZeroMinute, isoZeroMinute:
+		case goSecond, isoSecond:
+		case goZeroSecond, isoZeroSecond:
+		case goLongYear, isoLongYear:
+		case goYear, isoYear:
+		case goPM, isoPM:
+		case gopm, isopm:
+		case goTZ:
+		case goISO8601TZ:
+		case goISO8601SecondsTZ:
+		case goISO8601ShortTZ:
+		case goISO8601ColonTZ, iso8601ColonTZ:
+		case goISO8601ColonSecondsTZ:
+		case goNumTZ:
+		case goNumSecondsTz:
+		case goNumShortTZ:
+		case goNumColonTZ:
+		case goNumColonSecondsTZ:
+		case goFracSecond0:
+		case goFracSecond9:
+		case isoFracSecond:
+		case isoWeekYear:
+		case isoLongWeekYear:
+		case isoWeekOfYear:
+		case isoDayOfWeek:
+		}
+		if rangeErrString != "" {
+			return time.Time{}, &time.ParseError{orgLayout, orgValue, token.String(), value, ": " + rangeErrString + " out of range"}
+		}
+		if err != nil {
+			return time.Time{}, &time.ParseError{orgLayout, orgValue, token.String(), value, ""}
 		}
 	}
 
-	return output, nil
+	return time.Date(year, time.Month(month), day, hour, min, sec, nsec, loc), nil
 }
 
-func nextToken(input string) (prefix string, found string, suffix string, isToken bool, err error) {
+func nextToken(input string) (prefix string, token tokenId, suffix string) {
 	for i := 0; i < len(input); i++ {
 		switch input[i] {
 		case '\\':
-			return input[:i], input[i+1 : i+2], input[i+2:], false, nil
+			_, size := utf8.DecodeRune([]byte(input[i+1:]))
+			return input[:i+1+size], interSlashEscaped, input[i+1+size:]
 		case '.':
-			if strings.HasPrefix(input[i:], ".S") ||
-				strings.HasPrefix(input[i:], ".9") ||
-				strings.HasPrefix(input[i:], ".0") {
-				repeated := getRepeatOf(input[i+1:], input[i+1:i+2])
-				return input[:i], "." + repeated, input[i+len("."+repeated):], true, nil
+			frac, remaining, token := getFracSecond(input[i:])
+			if frac != "" {
+				return input[:i], token, remaining
 			}
 		case '\'':
 			unescaped := getUntilClosingSingleQuote(input[i+1:])
-			return input[:i], unescaped, input[i+len(`'`+unescaped+`'`):], false, nil
+			return input[:i] + unescaped, interSingleQuoteEscaped, input[i+1+len(unescaped)+1:]
 		}
 
-		possibleSequences, ok := tokenSerachTable[input[i]]
+		possibleTokens, ok := tokenSearchTable[input[i]]
 		if ok {
-			for _, possible := range possibleSequences {
-				if strings.HasPrefix(string(input[i:]), string(possible)) {
-					return input[:i], string(possible), input[i+len(possible):], true, nil
+			for _, possible := range possibleTokens {
+				if possible == "" {
+					break
+				}
+				if strings.HasPrefix(input[i:], possible) {
+					token, ok := goStrToNum[possible]
+					if !ok {
+						token = isoStrToNum[possible]
+					}
+					return input[:i], token.SetLen(uint(len(possible))), input[i+len(possible):]
 				}
 			}
-			if input[i] == '-' {
-				continue
-			}
-			return "", "", "", false, &FormatError{
-				idx:      i,
-				expected: fmt.Sprintf("must be prefixed with one of %+v", possibleSequences),
-				actual:   input[i:],
-				msg:      "maybe wrong len, like Y or YYY.",
-			}
 		}
 	}
-	return input, "", "", false, nil
-}
-
-func getRepeatOf(input string, target string) string {
-	for i := 0; i < len(input); i++ {
-		if input[i:i+len(target)] != target {
-			return input[:i+len(target)-1]
-		}
-	}
-	return input
-}
-
-// getUntilClosingSingleQuote returns `aaaaa` if input is `aaaaa'`.
-func getUntilClosingSingleQuote(input string) string {
-	for i := 0; i < len(input); i++ {
-		if input[i] == '\'' {
-			if i == 0 {
-				return ""
-			}
-			if input[i-1] != '\\' || strings.HasSuffix(input[:i+1], `\\'`) {
-				return input[:i]
-			}
-		}
-	}
-	return input
-}
-
-var tokenSerachTable = map[byte][]timeFormatToken{
-	'M': {"MMMM", "MMM", "MST", "MM", "M"},
-	'w': {"ww", "w"},
-	'd': {"ddd", "dd", "d"},
-	'D': {"DDD", "DD", "D"},
-	'H': {"HH"},
-	'h': {"hh", "h"},
-	'm': {"mm", "m"},
-	's': {"ss", "s"},
-	'Y': {"YYYY", "YY"},
-	'y': {"yyyy", "yy"},
-	'A': {"A"},
-	'a': {"a"},
-	'Z': {"Z07:00:00", "Z070000", "Z07", "ZZ", "Z"},
-	// '-' with no successding 0 is non-token.
-	'-': {"-07:00:00", "-070000", "-07:00", "-0700", "-07"},
-	// '.' with suceeding 0,9,S needs special handling.
-	// single '.' is non-token.
-}
-
-var tokenTable = map[timeFormatToken]goTimeFmtToken{
-	"MMMM":      "January",
-	"MMM":       "Jan",
-	"M":         "1",
-	"MM":        "01",
-	"ww":        "Monday",
-	"w":         "Mon",
-	"D":         "2",
-	"d":         "2",
-	"DD":        "02",
-	"dd":        "02",
-	"DDD":       "002",
-	"ddd":       "002",
-	"HH":        "15",
-	"h":         "3",
-	"hh":        "03",
-	"m":         "4",
-	"mm":        "04",
-	"s":         "5",
-	"ss":        "05",
-	"YYYY":      "2006",
-	"yyyy":      "2006",
-	"YY":        "06",
-	"yy":        "06",
-	"A":         "PM",
-	"a":         "pm",
-	"MST":       "MST",
-	"ZZ":        "Z0700",
-	"Z070000":   "Z070000",
-	"Z07":       "Z07",
-	"Z":         "Z07:00",
-	"Z07:00:00": "Z07:00:00",
-	"-0700":     "-0700",
-	"-070000":   "-070000",
-	"-07":       "-07",
-	"-07:00":    "-07:00",
-	"-07:00:00": "-07:00:00",
-}
-
-type timeFormatToken string
-
-var tokens = [...]timeFormatToken{
-	"MMMM",
-	"MMM",
-	"MM",
-	"M",
-	"ww",
-	"w",
-	"ddd",
-	"dd",
-	"d",
-	"HH",
-	"hh",
-	"h",
-	"mm",
-	"m",
-	"ss",
-	"s",
-	"YYYY",
-	"YY",
-	"A",
-	"a",
-	"MST",
-	"Z07:00:00",
-	"Z070000",
-	"Z07",
-	"ZZ",
-	"Z",
-	"-07:00:00",
-	"-070000",
-	"-07:00",
-	"-0700",
-	"-07",
-	".S",
-	".0",
-	".9",
-}
-
-type goTimeFmtToken string
-
-var goTimeFmtTokens = [...]goTimeFmtToken{
-	"January",
-	"Jan",
-	"1",
-	"01",
-	"Monday",
-	"Mon",
-	"2",
-	"02",
-	"002",
-	"15",
-	"3",
-	"03",
-	"4",
-	"04",
-	"5",
-	"05",
-	"2006",
-	"06",
-	"PM",
-	"pm",
-	"MST",
-	"Z0700",
-	"Z070000",
-	"Z07",
-	"Z07:00",
-	"Z07:00:00",
-	"-0700",
-	"-070000",
-	"-07",
-	"-07:00",
-	"-07:00:00",
-}
-
-func (tt timeFormatToken) toGoFmt() string {
-	token, ok := tokenTable[tt]
-	if ok {
-		return string(token)
-	}
-
-	if strings.HasPrefix(string(tt), ".S") {
-		return strings.ReplaceAll(string(tt), "S", "0")
-	} else if strings.HasPrefix(string(tt), ".0") || strings.HasPrefix(string(tt), ".9") {
-		return string(tt)
-	}
-	panic(fmt.Sprintf("unknown: %s", tt))
+	return input, invalid, ""
 }
