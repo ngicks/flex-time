@@ -7,6 +7,7 @@ import (
 	"testing"
 	"testing/quick"
 	"time"
+	_ "time/tzdata"
 
 	"github.com/ngicks/flextime"
 )
@@ -39,7 +40,7 @@ func TestNextStdChunk(t *testing.T) {
 			prefix, std, suffix := flextime.NextStdChunk(s)
 			out += prefix
 			if std > 0 {
-				out += "(" + flextime.ChunkNames[int(std)] + ")"
+				out += "(" + flextime.ChunkNames[int(std.T())] + ")"
 			}
 			s = suffix
 		}
@@ -124,8 +125,9 @@ var formatTests = []FormatTest{
 }
 
 func TestFormat(t *testing.T) {
+	pst, _ := time.LoadLocation("America/Los_Angeles")
 	// The numeric time represents Thu Feb  4 21:00:57.012345600 PST 2009
-	time := time.Unix(0, 1233810057012345600)
+	time := time.Unix(0, 1233810057012345600).In(pst)
 	for _, test := range formatTests {
 		result := time.Format(test.format)
 		if result != test.result {
@@ -293,8 +295,10 @@ var parseTests = []ParseTest{
 }
 
 func TestParse(t *testing.T) {
+	pst, _ := time.LoadLocation("America/Los_Angeles")
 	for _, test := range parseTests {
 		time, err := flextime.Parse(test.format, test.value)
+		time = time.In(pst)
 		if err != nil {
 			t.Errorf("%s error: %v", test.name, err)
 		} else {
@@ -797,26 +801,6 @@ func TestParseYday(t *testing.T) {
 			t.Errorf("unexpected error for %s: %v", d, err)
 		} else if tm.Year() != 2020 || tm.YearDay() != i {
 			t.Errorf("got year %d yearday %d, want %d %d", tm.Year(), tm.YearDay(), 2020, i)
-		}
-	}
-}
-
-// Issue 48037
-func TestFormatFractionalSecondSeparators(t *testing.T) {
-	tests := []struct {
-		s, want string
-	}{
-		{`15:04:05.000`, `21:00:57.012`},
-		{`15:04:05.999`, `21:00:57.012`},
-		{`15:04:05,000`, `21:00:57,012`},
-		{`15:04:05,999`, `21:00:57,012`},
-	}
-
-	// The numeric time represents Thu Feb  4 21:00:57.012345600 PST 2009
-	time := time.Unix(0, 1233810057012345600)
-	for _, tt := range tests {
-		if q := time.Format(tt.s); q != tt.want {
-			t.Errorf("Format(%q) = got %q, want %q", tt.s, q, tt.want)
 		}
 	}
 }
