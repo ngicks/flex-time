@@ -43,7 +43,7 @@ func ReplaceTimeToken(input string) (string, error) {
 	var output string
 
 	for len(input) > 0 {
-		prefix, token, input, isToken, err = nextToken(input)
+		prefix, token, input, isToken, err = nextChunk(input)
 		if err != nil {
 			return "", err
 		}
@@ -58,7 +58,13 @@ func ReplaceTimeToken(input string) (string, error) {
 	return output, nil
 }
 
-func nextToken(input string) (prefix string, found string, suffix string, isToken bool, err error) {
+// nextChunk reads input string from its head, up to a first time token or espaced string.
+//
+// prefix is non time token string which is read up before the first hit.
+// found is next chunk string. If isTokein is true, chunk is a time token, an unescaped string otherwise.
+// suffix is rest of input.
+// err would be non nil if token has wrong length.
+func nextChunk(input string) (prefix string, found string, suffix string, isToken bool, err error) {
 	for i := 0; i < len(input); i++ {
 		switch input[i] {
 		case '\\':
